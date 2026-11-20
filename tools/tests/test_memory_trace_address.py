@@ -74,6 +74,11 @@ class RangeTests(FeatureRequired):
         self.assertEqual(trace.parse_range("4096", "32"), (4096, 32))
         self.assertEqual(trace.parse_range("0x1000", "0x20"), (0x1000, 0x20))
 
+    def test_accepts_zero_padded_decimal_ranges(self):
+        self.assertEqual(trace.parse_range("0004096", "00032"), (4096, 32))
+        self.assertEqual(trace.parse_range("0008", "0002"), (8, 2))
+        self.assertEqual(trace.parse_range("0000", "0001"), (0, 1))
+
     def test_rejects_invalid_or_overflowing_ranges(self):
         for address, size in (("bad", "1"), ("-1", "1"), ("0", "0"),
                               ("0x10000000000000000", "1"),
@@ -130,6 +135,15 @@ class CliTests(FeatureRequired):
             self.assertIn("line 1: map anon", result.stdout)
             self.assertNotIn("protect", result.stdout)
             self.assertNotIn("allocate physical", result.stdout)
+
+    def test_cli_accepts_zero_padded_decimal_ranges(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "run.log"
+            path.write_text("[memory] map anon 0x1000+0x1000 prot=0x3 flags=0x0\n", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(TOOL), str(path), "--address", "0004096", "--length", "0008"],
+                                    capture_output=True, text=True, encoding="utf-8", timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("line 1: map anon", result.stdout)
 
     def test_cli_reads_a_first_line_event_after_a_utf8_bom(self):
         with tempfile.TemporaryDirectory() as directory:
