@@ -50,8 +50,8 @@ def parse_events(lines):
 
 def parse_range(address, size):
     try:
-        start = int(address, 0)
-        length = int(size, 0)
+        start = int(address, 10 if address.isdecimal() else 0)
+        length = int(size, 10 if size.isdecimal() else 0)
     except ValueError as error:
         raise ValueError("address and byte count must be decimal or 0x-prefixed integers") from error
     if start < 0 or start >= 1 << 64:
